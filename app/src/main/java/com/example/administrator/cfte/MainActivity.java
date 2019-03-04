@@ -1,4 +1,7 @@
 package com.example.administrator.cfte;
+/**
+ * 作者：欧阳文君
+ */
 
 import android.os.BatteryManager;
 import android.os.Handler;
