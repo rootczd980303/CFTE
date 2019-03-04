@@ -1,7 +1,7 @@
 package com.example.administrator.cfte;
 /**
  * 作者：欧阳文君
- *
+ *第二次测试修改
  */
 
 import android.os.BatteryManager;
