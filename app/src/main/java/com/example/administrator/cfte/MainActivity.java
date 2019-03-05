@@ -72,15 +72,16 @@ public class MainActivity extends AppCompatActivity implements IMyLocation,ViewP
         }
         init();
 
-        //一秒刷新一次
-        run = true;
-        handler.postDelayed(task, 1000);
         if(!permissionGranted){
             Toast.makeText(this, "请打开权限", Toast.LENGTH_SHORT).show();
             return;
         }
         MyLocationManager manager = new MyLocationManager(this);
         manager.getLocationByLonAndLat(manager.beginLocatioon(),"","");
+
+        //一秒刷新一次
+        run = true;
+        handler.postDelayed(task, 1000);
     }
 
     private final Runnable task = new Runnable() {
