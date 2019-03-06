@@ -19,6 +19,8 @@ import android.support.v4.content.ContextCompat;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.view.View;
+import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -26,6 +28,15 @@ import android.widget.Toast;
 import com.example.administrator.cfte.GetLocation.IMyLocation;
 import com.example.administrator.cfte.GetLocation.MyLocationBean;
 import com.example.administrator.cfte.GetLocation.MyLocationManager;
+import com.github.promeg.pinyinhelper.Pinyin;
+import com.github.promeg.tinypinyin.lexicons.android.cncity.CnCityDict;
+import com.google.gson.Gson;
+import com.iflytek.cloud.RecognizerResult;
+import com.iflytek.cloud.SpeechConstant;
+import com.iflytek.cloud.SpeechError;
+import com.iflytek.cloud.SpeechUtility;
+import com.iflytek.cloud.ui.RecognizerDialog;
+import com.iflytek.cloud.ui.RecognizerDialogListener;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -39,6 +50,8 @@ public class MainActivity extends AppCompatActivity implements IMyLocation,ViewP
     private MyAdapter mAdapter;
     private ArrayList<Fragment> data;
     private TextView time,date,dianliang,location;
+    private ImageButton voice;
+    private RecognizerDialog mDialog;
 
     private F1 f1;
     private F2 f2;
@@ -67,10 +80,13 @@ public class MainActivity extends AppCompatActivity implements IMyLocation,ViewP
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        SpeechUtility.createUtility(this, SpeechConstant.APPID+"=5c1704b9");
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M){
             requestPermission();
         }
         init();
+
+        //location.setText(Pinyin.toPinyin("爸爸", ""));
 
         if(!permissionGranted){
             Toast.makeText(this, "请打开权限", Toast.LENGTH_SHORT).show();
@@ -84,6 +100,7 @@ public class MainActivity extends AppCompatActivity implements IMyLocation,ViewP
         handler.postDelayed(task, 1000);
     }
 
+    //定时更新时间
     private final Runnable task = new Runnable() {
         @Override
         public void run() {
@@ -142,6 +159,7 @@ public class MainActivity extends AppCompatActivity implements IMyLocation,ViewP
 
     }
 
+    //更新数据
     public void SetupData(){
         Calendar calendar = Calendar.getInstance();
         int year = calendar.get(Calendar.YEAR);
@@ -162,12 +180,26 @@ public class MainActivity extends AppCompatActivity implements IMyLocation,ViewP
 
     }
 
+    //活动初始化
     public void init(){
         vp = (ViewPager) findViewById(R.id.vp);
         time = (TextView) findViewById(R.id.tv_time);
         date = (TextView) findViewById(R.id.tv_date);
         dianliang = (TextView) findViewById(R.id.tv_dianliang);
         location = (TextView) findViewById(R.id.tv_location);
+        voice =(ImageButton)findViewById(R.id.ib_voice);
+        voice.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if(ContextCompat.checkSelfPermission(MainActivity.this,Manifest.
+                        permission.RECORD_AUDIO)!=PackageManager.PERMISSION_GRANTED){
+                    ActivityCompat.requestPermissions(MainActivity.this,
+                            new String[]{Manifest.permission.RECORD_AUDIO},1);
+                }else{
+                    initSpeech(MainActivity.this);
+                }
+            }
+        });
 
         data = new ArrayList<>();
         f1 = new F1();
@@ -183,6 +215,53 @@ public class MainActivity extends AppCompatActivity implements IMyLocation,ViewP
         vp.setCurrentItem(1);
     }
 
+    //语言输入
+    public void initSpeech(final Context context){
+        mDialog = new RecognizerDialog(context,null);
+        mDialog.setParameter(SpeechConstant.LANGUAGE,"zh_cn");
+        mDialog.setParameter(SpeechConstant.ACCENT,"madarin");
+        mDialog.setListener(new RecognizerDialogListener() {
+            @Override
+            public void onResult(RecognizerResult recognizerResult, boolean b) {
+                if(!b){
+                    String result = parseVoice(recognizerResult.getResultString());
+                    VoiceControl vc =new VoiceControl();
+                }
+            }
+
+            @Override
+            public void onError(SpeechError speechError) {
+
+            }
+        });
+        mDialog.show();
+    }
+
+    public String parseVoice(String resultString){
+        Gson gson = new Gson();
+        Voice voiceBean = gson.fromJson(resultString,Voice.class);
+        StringBuffer stringBuffer = new StringBuffer();
+        ArrayList<Voice.WSBean> ws = voiceBean.ws;
+        for(Voice.WSBean wsBean : ws){
+            String word = wsBean.cw.get(0).w;
+            stringBuffer.append(word);
+        }
+        return stringBuffer.toString();
+    }
+
+    public class Voice{
+        public ArrayList<WSBean> ws;
+
+        public class WSBean {
+            public ArrayList<CWBean> cw;
+        }
+
+        public class CWBean {
+            public String w;
+        }
+    }
+
+    //获取地理位置
     @Override
     public LocationManager getLocationManager() {
         return (LocationManager) (getSystemService(LOCATION_SERVICE));
@@ -230,6 +309,12 @@ public class MainActivity extends AppCompatActivity implements IMyLocation,ViewP
                     permissionGranted = false;
                 }else {
                     permissionGranted = true;
+                }
+            case 1:
+                if(grantResults.length>0 && grantResults[0]==PackageManager.PERMISSION_GRANTED){
+                    initSpeech(this);
+                }else{
+                    Toast.makeText(this,"you denied the permission!",Toast.LENGTH_SHORT).show();
                 }
                 break;
         }

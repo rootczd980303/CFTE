@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<litepal>
+    <dbname value="NoteStore"/>
+
+    <version value="3"/>
+
+    <list>
+        <mapping class="com.example.hankzz.purenote.Note"/>
+    </list>
+
+</litepal>

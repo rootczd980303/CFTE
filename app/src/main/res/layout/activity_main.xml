@@ -29,6 +29,7 @@
         android:orientation="vertical">
 
         <ImageButton
+            android:id="@+id/ib_voice"
             android:layout_width="60dp"
             android:layout_height="60dp"
             android:layout_gravity="center_horizontal"
